@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bella Vita - Carrinho</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --vermelho: #9c0a0a;
+      --dourado: #d4af37;
+      --preto: #000000;
+      --preto-cinza: #111111;
+    }
+
+    body {
+      background-color: var(--preto);
+      color: #fff;
+      font-family: 'Arial', sans-serif;
+    }
+
+    .navbar {
+      background-color: var(--preto) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .fita-branca {
+      background: var(--preto-cinza);
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--dourado);
+    }
+
+    .btn-fita {
+      background-color: transparent;
+      color: var(--dourado);
+      border: 2px solid var(--dourado);
+      padding: 10px 25px;
+      border-radius: 30px;
+      text-decoration: none;
+    }
+
+    .btn-fita:hover {
+      background-color: var(--dourado);
+      color: var(--preto);
+    }
+
+    .carrinho-container {
+      padding: 50px 0;
+      min-height: 60vh;
+    }
+
+    .carrinho-item {
+      background-color: var(--preto-cinza);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .carrinho-total {
+      background-color: var(--preto-cinza);
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 30px;
+    }
+
+    .btn-finalizar {
+      background-color: var(--dourado);
+      color: var(--preto);
+      border: none;
+      padding: 12px 30px;
+      border-radius: 30px;
+      font-weight: 600;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar Simples -->
+  <nav class="navbar navbar-dark">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <img src="img/logo 2 sem fundo.png" alt="Logo Bella Vita" height="50">
+      </a>
+    </div>
+  </nav>
+
+  <!-- Fita de navegação -->
+  <div class="fita-branca">
+    <a href="index.html" class="btn-fita">Início</a>
+    <a href="carrinho.html" class="btn-fita">Carrinho</a>
+    <a href="Acompanhamento.html" class="btn-fita">Acompanhar Pedido</a>
+    <a href="atualizarpedido.html" class="btn-fita">Admin</a>
+  </div>
+
+  <!-- Carrinho -->
+  <div class="container carrinho-container">
+    <h1 class="text-center mb-5" style="color: var(--dourado);">Seu Carrinho</h1>
+    
+    <div id="carrinho-vazio" class="text-center">
+      <p>Seu carrinho está vazio.</p>
+      <button class="btn btn-success mt-3" onclick="adicionarItensTeste()">Adicionar Itens de Teste</button>
+    </div>
+
+    <div id="itens-carrinho"></div>
+
+    <div id="total-carrinho" class="carrinho-total hidden">
+      <h3>Total: R$ <span id="total">0.00</span></h3>
+      <button class="btn-finalizar" onclick="finalizarCompra()">Finalizar Compra</button>
+    </div>
+  </div>
+
+  <script>
+    // Carrinho de compras
+    let carrinho = JSON.parse(localStorage.getItem('carrinho')) || [];
+
+    const produtos = {
+      1: { nome: "Pizza Margherita", preco: 45.00 },
+      2: { nome: "Pizza Calabresa", preco: 50.00 },
+      3: { nome: "Pizza Quatro Queijos", preco: 55.00 }
+    };
+
+    // Inicializar carrinho
+    document.addEventListener('DOMContentLoaded', function() {
+      atualizarCarrinho();
+    });
+
+    // Função para adicionar itens de teste
+    function adicionarItensTeste() {
+      carrinho = [
+        { id: 1, quantidade: 2 },
+        { id: 2, quantidade: 1 }
+      ];
+      localStorage.setItem('carrinho', JSON.stringify(carrinho));
+      atualizarCarrinho();
+    }
+
+    // Atualizar exibição do carrinho
+    function atualizarCarrinho() {
+      const container = document.getElementById('itens-carrinho');
+      const totalContainer = document.getElementById('total-carrinho');
+      const carrinhoVazio = document.getElementById('carrinho-vazio');
+
+      container.innerHTML = '';
+      
+      if (carrinho.length === 0) {
+        carrinhoVazio.classList.remove('hidden');
+        totalContainer.classList.add('hidden');
+        return;
+      }
+
+      carrinhoVazio.classList.add('hidden');
+      totalContainer.classList.remove('hidden');
+
+      carrinho.forEach(item => {
+        const produto = produtos[item.id];
+        const div = document.createElement('div');
+        div.className = 'carrinho-item';
+        div.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h4>${produto.nome}</h4>
+              <p class="mb-0">R$ ${produto.preco.toFixed(2)}</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+              <button class="btn btn-sm btn-danger" onclick="alterarQuantidade(${item.id}, -1)">-</button>
+              <span>${item.quantidade}</span>
+              <button class="btn btn-sm btn-success" onclick="alterarQuantidade(${item.id}, 1)">+</button>
+              <button class="btn btn-sm btn-warning" onclick="removerItem(${item.id})">Remover</button>
+            </div>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      calcularTotal();
+    }
+
+    // Alterar quantidade
+    function alterarQuantidade(id, variacao) {
+      const item = carrinho.find(item => item.id === id);
+      
+      if (item) {
+        item.quantidade += variacao;
+        
+        if (item.quantidade <= 0) {
+          removerItem(id);
+          return;
+        }
+      }
+
+      localStorage.setItem('carrinho', JSON.stringify(carrinho));
+      atualizarCarrinho();
+    }
+
+    // Remover item
+    function removerItem(id) {
+      carrinho = carrinho.filter(item => item.id !== id);
+      localStorage.setItem('carrinho', JSON.stringify(carrinho));
+      atualizarCarrinho();
+    }
+
+    // Calcular total
+    function calcularTotal() {
+      const total = carrinho.reduce((acc, item) => {
+        const produto = produtos[item.id];
+        return acc + (produto.preco * item.quantidade);
+      }, 0);
+
+      document.getElementById('total').textContent = total.toFixed(2);
+    }
+
+    // Gerar código do pedido
+    function gerarCodigoPedido() {
+      return 'PED' + Math.floor(100000 + Math.random() * 900000);
+    }
+
+    // Finalizar compra - FUNÇÃO PRINCIPAL
+    function finalizarCompra() {
+      if (carrinho.length === 0) {
+        alert('Carrinho vazio!');
+        return;
+      }
+
+      // Criar pedido
+      const pedido = {
+        codigo: gerarCodigoPedido(),
+        data: new Date().toISOString(),
+        itens: [...carrinho],
+        total: carrinho.reduce((acc, item) => {
+          const produto = produtos[item.id];
+          return acc + (produto.preco * item.quantidade);
+        }, 0),
+        status: 'pendente'
+      };
+
+      // Salvar pedido
+      let pedidos = JSON.parse(localStorage.getItem('pedidos')) || [];
+      pedidos.push(pedido);
+      localStorage.setItem('pedidos', JSON.stringify(pedidos));
+
+      // Limpar carrinho
+      carrinho = [];
+      localStorage.removeItem('carrinho');
+      
+      // Mostrar código e redirecionar
+      const codigoPedido = pedido.codigo;
+      alert(`✅ Compra realizada!\nSeu código: ${codigoPedido}\nAnote para acompanhar.`);
+      
+      // Redirecionar para acompanhamento
+      window.location.href = 'Acompanhamento.html';
+    }
+  </script>
+</body>
+</html>
